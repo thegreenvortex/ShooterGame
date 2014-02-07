@@ -58,7 +58,9 @@ namespace Shooter
         Random random;
 
         Texture2D projectileTexture;
+        Texture2D fireballTexture;
         List<Projectile> projectiles;
+        List<BalloonProjectile> balloonProjectiles;
 
         // The rate of fire of the player laser
         //TimeSpan fireTime;
@@ -85,7 +87,7 @@ namespace Shooter
 
         //bool bPlayer;
 
-
+        int bProjectileCount;
 
 
         public Game1()
@@ -134,9 +136,10 @@ namespace Shooter
             random = new Random();
 
             projectiles = new List<Projectile>();
+            balloonProjectiles = new List<BalloonProjectile>();
 
-            SpawnProjectile = 6;
-            SpawnBProjectile = 6;
+            SpawnProjectile = 10;
+            SpawnBProjectile = 75;
 
             //bPlayer = false;
 
@@ -148,7 +151,7 @@ namespace Shooter
             // Set the laser to fire every quarter second
             //fireTime = TimeSpan.FromSeconds(.15f);
 
-
+            bProjectileCount = 0;
 
             base.Initialize();
         }
@@ -164,9 +167,9 @@ namespace Shooter
 
             Vector2 playerPosition = new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y + GraphicsDevice.Viewport.TitleSafeArea.Height / 2);
 
-            player.Initialize(Content.Load<Texture2D>("player"), playerPosition);
+            player.Initialize(Content.Load<Texture2D>("BowsersAirship"), playerPosition);
 
-            balloonTexture = Content.Load<Texture2D>("mine");
+            balloonTexture = Content.Load<Texture2D>("Boo");
             bulletBillTexture = Content.Load<Texture2D>("bullet_bill");
 
             // Load the parallaxing background
@@ -176,6 +179,7 @@ namespace Shooter
             mainBackground = Content.Load<Texture2D>("mainbackground");
 
             projectileTexture = Content.Load<Texture2D>("laser");
+            fireballTexture = Content.Load<Texture2D>("FireballMissle");
 
             explosionTexture = Content.Load<Texture2D>("explosion");
 
@@ -238,9 +242,12 @@ namespace Shooter
             UpdateBulletBill(gameTime);
 
             // Update the collision
-            UpdateCollision();
+            
 
             UpdateProjectiles();
+            UpdateBalloonProjectiles();
+
+            UpdateCollision();
 
             UpdateExplosions(gameTime);
 
@@ -305,7 +312,7 @@ namespace Shooter
 
                 AddExplosion(player.Position);
                 Vector2 playerPosition = new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y + GraphicsDevice.Viewport.TitleSafeArea.Height / 2);
-                player.Initialize(Content.Load<Texture2D>("player"), playerPosition);
+                player.Initialize(Content.Load<Texture2D>("BowsersAirship"), playerPosition);
 
                 for (int i = balloons.Count - 1; i >= 0; i--)
                 {
@@ -329,6 +336,29 @@ namespace Shooter
 
             // Only create the rectangle once for the player
             rectangle1 = new Rectangle((int)player.Position.X, (int)player.Position.Y, player.Width, player.Height);
+
+            for (int i = 0; i < balloonProjectiles.Count; i++)
+            {
+                rectangle2 = new Rectangle((int)balloonProjectiles[i].Position.X -
+                balloonProjectiles[i].Width / 2, (int)balloonProjectiles[i].Position.Y -
+                balloonProjectiles[i].Height / 2, balloonProjectiles[i].Width, balloonProjectiles[i].Height);
+
+                if (rectangle2.Intersects(rectangle1))
+                {
+                    // Subtract the health from the player based on
+                    // the enemy damage
+                    player.Health -= balloonProjectiles[i].Damage;
+                    balloonProjectiles[i].Active = false;
+                    bProjectileCount--;
+
+                    // If the player health is less than zero we died
+                    if (player.Health <= 0)
+                        player.Active = false;
+                }
+
+
+
+            }
 
             // Do the collision between the player and the balloons
             for (int i = 0; i < balloons.Count; i++)
@@ -413,6 +443,8 @@ namespace Shooter
                     }
                 }
             }
+
+
         }
 
         private void AddExplosion(Vector2 position)
@@ -475,6 +507,18 @@ namespace Shooter
             {
                 balloons[i].Update(gameTime);
 
+                if (SpawnBProjectile <= 0)
+                {
+                    SpawnBProjectile = 75;
+                    // Play the laser sound
+                    laserSound.Play();
+                    AddBalloonProjectile(balloons[i].Position + new Vector2(balloons[i].Width / 2, 0));
+
+                }
+
+
+
+
                 if (balloons[i].Active == false)
                 {
  
@@ -492,6 +536,12 @@ namespace Shooter
                     balloons.RemoveAt(i);
                 }
             }
+
+            if (SpawnBProjectile > 0)
+            {
+                SpawnBProjectile--;
+            }
+
             //wwwbPlayer = true;
 
         }
@@ -528,7 +578,7 @@ namespace Shooter
                 previousBulletSpawnTime = gameTime.TotalGameTime;
 
                 // Add an Enemy
-                if(balloons.Count < 5)
+                if(balloons.Count < 8)
                     AddBulletBill();
             }
 
@@ -561,7 +611,7 @@ namespace Shooter
         private void AddProjectile(Vector2 position)
         {
             Projectile projectile = new Projectile();
-            projectile.Initialize(GraphicsDevice.Viewport, projectileTexture, position);
+            projectile.Initialize(GraphicsDevice.Viewport, fireballTexture, position);
             projectiles.Add(projectile);
         }
 
@@ -575,6 +625,27 @@ namespace Shooter
                 if (projectiles[i].Active == false)
                 {
                     projectiles.RemoveAt(i);
+                }
+            }
+        }
+
+        private void AddBalloonProjectile(Vector2 position)
+        {
+            BalloonProjectile projectile = new BalloonProjectile();
+            projectile.Initialize(GraphicsDevice.Viewport, projectileTexture, position);
+            balloonProjectiles.Add(projectile);
+        }
+
+        private void UpdateBalloonProjectiles()
+        {
+            // Update the Projectiles
+            for (int i = balloonProjectiles.Count - 1; i >= 0; i--)
+            {
+                balloonProjectiles[i].Update();
+
+                if (balloonProjectiles[i].Active == false)
+                {
+                    balloonProjectiles.RemoveAt(i);
                 }
             }
         }
@@ -630,6 +701,11 @@ namespace Shooter
             for (int i = 0; i < projectiles.Count; i++)
             {
                 projectiles[i].Draw(spriteBatch);
+            }
+
+            for (int i = 0; i < balloonProjectiles.Count; i++)
+            {
+                balloonProjectiles[i].Draw(spriteBatch);
             }
 
             // Draw the explosions

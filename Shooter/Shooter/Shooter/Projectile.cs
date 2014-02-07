@@ -44,8 +44,8 @@ namespace Shooter
         {
             Texture = texture;
             Position = position;
-            Position.Y += 40;
-            //Position.X -= 50;
+            Position.Y += 103;
+            Position.X += 50;
             this.viewport = viewport;
 
             Active = true;

@@ -52,7 +52,7 @@ namespace Shooter
 
 
             // Set the health of the enemy
-            Health = 4;
+            Health = 6;
 
             // Set the amount of damage the enemy can do
             Damage = 5;

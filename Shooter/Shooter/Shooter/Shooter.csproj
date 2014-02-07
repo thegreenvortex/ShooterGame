@@ -109,6 +109,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Animation.cs" />
+    <Compile Include="BalloonProjectile.cs" />
     <Compile Include="Balloons.cs" />
     <Compile Include="BulletBill.cs" />
     <Compile Include="ParallaxingBackground.cs" />
