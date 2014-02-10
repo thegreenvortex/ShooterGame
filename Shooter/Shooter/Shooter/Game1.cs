@@ -250,6 +250,7 @@ namespace Shooter
             UpdateCollision();
 
             UpdateExplosions(gameTime);
+            UpdatePartExplosions(gameTime);
 
             base.Update(gameTime);
         }
@@ -306,6 +307,7 @@ namespace Shooter
 
 
 
+
             // reset score if player health goes to zero
             if (player.Health <= 0)
             {
@@ -317,6 +319,16 @@ namespace Shooter
                 for (int i = balloons.Count - 1; i >= 0; i--)
                 {
                     balloons.RemoveAt(i);
+                }
+
+                for (int i = bulletBills.Count - 1; i >= 0; i--)
+                {
+                    bulletBills.RemoveAt(i);
+                }
+
+                for (int i = balloonProjectiles.Count - 1; i >= 0; i--)
+                {
+                    balloonProjectiles.RemoveAt(i);
                 }
 
                 player.Health = 100;
@@ -445,6 +457,48 @@ namespace Shooter
             }
 
 
+
+
+            for (int i = 0; i < projectiles.Count; i++)
+            {
+                for (int j = 0; j < balloonProjectiles.Count; j++)
+                {
+                    // Create the rectangles we need to determine if we collided with each other
+                    rectangle1 = new Rectangle((int)projectiles[i].Position.X -
+                    projectiles[i].Width / 2, (int)projectiles[i].Position.Y -
+                    projectiles[i].Height / 2, projectiles[i].Width, projectiles[i].Height);
+
+                    rectangle2 = new Rectangle((int)balloonProjectiles[j].Position.X, (int)balloonProjectiles[j].Position.Y, balloonProjectiles[j].Width, balloonProjectiles[j].Height);
+
+                    // Determine if the two objects collided with each other
+                    if (rectangle1.Intersects(rectangle2))
+                    {
+                        balloonProjectiles[j].Active = false;
+                        projectiles[i].Active = false;
+                    }
+                }
+            }
+
+
+        }
+
+        private void AddPartExplosion(Vector2 position)
+        {
+            Animation explosion = new Animation();
+            explosion.Initialize(explosionTexture, position, 134, 134, 12, 45, Color.White, 0.4f, false);
+            explosions.Add(explosion);
+        }
+
+        private void UpdatePartExplosions(GameTime gameTime)
+        {
+            for (int i = explosions.Count - 1; i >= 0; i--)
+            {
+                explosions[i].Update(gameTime);
+                if (explosions[i].Active == false)
+                {
+                    explosions.RemoveAt(i);
+                }
+            }
         }
 
         private void AddExplosion(Vector2 position)
@@ -498,8 +552,8 @@ namespace Shooter
                 previousSpawnTime = gameTime.TotalGameTime;
 
                 // Add an Enemy
-                //if(balloons.Count < 2)
-                AddEnemy();
+                if(balloons.Count < 4)
+                    AddEnemy();
             }
 
             // Update the Enemies
@@ -624,6 +678,7 @@ namespace Shooter
 
                 if (projectiles[i].Active == false)
                 {
+                    AddPartExplosion(projectiles[i].Position);
                     projectiles.RemoveAt(i);
                 }
             }
@@ -645,6 +700,8 @@ namespace Shooter
 
                 if (balloonProjectiles[i].Active == false)
                 {
+                    balloonProjectiles[i].Position.X -= 30;
+                    AddPartExplosion(balloonProjectiles[i].Position);
                     balloonProjectiles.RemoveAt(i);
                 }
             }
@@ -709,18 +766,22 @@ namespace Shooter
             }
 
             // Draw the explosions
-            for (int i = 0; i < explosions.Count; i++)
-            {
-                explosions[i].Draw(spriteBatch);
-            }
+
 
             // Draw the score
             spriteBatch.DrawString(font, "score: " + score, new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y), Color.White);
             // Draw the player health
             spriteBatch.DrawString(font, "health: " + player.Health, new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y + 30), Color.White);
 
+            spriteBatch.DrawString(font, "Time: " + gameTime.TotalGameTime.Minutes + " : " + gameTime.TotalGameTime.Seconds + " : " + gameTime.TotalGameTime.Milliseconds, new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X + 1350, GraphicsDevice.Viewport.TitleSafeArea.Y), Color.White);
+
             // Draw the Player
             player.Draw(spriteBatch);
+
+            for (int i = 0; i < explosions.Count; i++)
+            {
+                explosions[i].Draw(spriteBatch);
+            }
 
             // Stop drawing
             spriteBatch.End();
